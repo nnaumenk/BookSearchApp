@@ -64,7 +64,7 @@ extension BookListViewController: UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "bookListCell") as? BookListCell else { return UITableViewCell() }
         
         cell.titleLabel.text = model.title ?? ""
-        cell.subtileLabel.text = String(indexPath.row)//model.author_name != nil ? "by " + model.author_name!.joined(separator: " • ") : ""
+        cell.subtileLabel.text = model.author_name != nil ? "by " + model.author_name!.joined(separator: " • ") : ""
         
         setCellImage(indexPath: indexPath, model: model, cell: cell)
         setCellDescription(indexPath: indexPath, model: model, cell: cell)
