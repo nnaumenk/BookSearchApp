@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SnapKit
 
 final class BookListCell: UITableViewCell {
 
@@ -61,17 +62,36 @@ final class BookListCell: UITableViewCell {
     }
     
     private func setupConstraints() {
-        NSLayoutConstraint.activate([
-            leftImageView.heightAnchor.constraint(equalToConstant: 80),
-            leftImageView.widthAnchor.constraint(equalToConstant: 60),
-            leftImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-        ])
         
-        NSLayoutConstraint.activate([
-            titleLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18),
-            subtileLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18),
-            descriptionLabel.heightAnchor.constraint(equalToConstant: 60),
-        ])
+//        NSLayoutConstraint.activate([
+//            leftImageView.heightAnchor.constraint(equalToConstant: 80),
+//            leftImageView.widthAnchor.constraint(equalToConstant: 60),
+//            leftImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+//        ])
+//        
+//        NSLayoutConstraint.activate([
+//            titleLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18),
+//            subtileLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18),
+//            descriptionLabel.heightAnchor.constraint(equalToConstant: 60),
+//        ])
+        
+        leftImageView.snp.makeConstraints({ make in
+            make.height.equalTo(80)
+            make.width.equalTo(60)
+            make.centerY.equalTo(contentView.snp.centerY)
+        })
+        
+        titleLabel.snp.makeConstraints({ make in
+            make.height.greaterThanOrEqualTo(18)
+        })
+        
+        subtileLabel.snp.makeConstraints({ make in
+            make.height.greaterThanOrEqualTo(18)
+        })
+        
+        descriptionLabel.snp.makeConstraints({ make in
+            make.height.equalTo(60)
+        })
         
         let views: [String: UIView] = [
             "leftImageView": leftImageView,
@@ -88,5 +108,4 @@ final class BookListCell: UITableViewCell {
         
         NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "V:|-8-[titleLabel]-4-[subtileLabel]-8-[descriptionLabel]-8-|", options: [], metrics: nil, views: views))
     }
-    
 }

@@ -16,6 +16,7 @@ struct OLBookListModel: Codable {
     
     var mediumImageURL: String? {
         guard let cover_i = cover_i else { return nil }
+        if cover_i <= 0 { return nil }
         
         return "http://covers.openlibrary.org/w/id/\(cover_i)-M.jpg"
     }

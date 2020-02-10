@@ -64,7 +64,7 @@ extension BookListViewController: UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "bookListCell") as? BookListCell else { return UITableViewCell() }
         
         cell.titleLabel.text = model.title ?? ""
-        cell.subtileLabel.text = model.author_name != nil ? "by " + model.author_name!.joined(separator: " • ") : ""
+        cell.subtileLabel.text = String(indexPath.row)//model.author_name != nil ? "by " + model.author_name!.joined(separator: " • ") : ""
         
         setCellImage(indexPath: indexPath, model: model, cell: cell)
         setCellDescription(indexPath: indexPath, model: model, cell: cell)
@@ -109,53 +109,81 @@ extension BookListViewController: UITableViewDelegate {
 
 extension BookListViewController {
     private func setCellImage(indexPath: IndexPath, model: OLBookListModel, cell: BookListCell) {
+        
+        cell.leftImageView.stopActivityIndicator()
+        
+        guard let imageURL = model.mediumImageURL else {
+            bookImageArray[indexPath.row].image = UIImage(named: "no_book_cover")
+            cell.leftImageView.image = bookImageArray[indexPath.row].image
+            return
+        }
+        
         if let image = bookImageArray[indexPath.row].image {
             cell.leftImageView.image = image
             return
         }
         
-        if bookImageArray[indexPath.row].isDownloading { return }
+        if bookImageArray[indexPath.row].isDownloading {
+            cell.leftImageView.startActivityIndicator()
+            return
+        }
         
         bookImageArray[indexPath.row].isDownloading = true
-        if let imageURL = model.mediumImageURL {
-            cell.leftImageView.imageFromURL(urlString: imageURL, completionHandler: { image in
+        cell.leftImageView.startActivityIndicator()
+        cell.leftImageView.image = nil
+        
+        self.getImageFromURL(urlString: imageURL, completionHandler: { image in
                 
-                self.bookImageArray[indexPath.row].isDownloading = false
-                self.bookImageArray[indexPath.row].image = image
-            })
-        } else {
-            bookImageArray[indexPath.row].isDownloading = false
-            bookImageArray[indexPath.row].image = UIImage(named: "no_book_cover")
-            cell.leftImageView.image = bookImageArray[indexPath.row].image
-        }
+            self.bookImageArray[indexPath.row].isDownloading = false
+            self.bookImageArray[indexPath.row].image = image ?? UIImage(named: "no_book_cover")
+                
+            guard let indexPathsForVisibleRows = self.bookTableView.indexPathsForVisibleRows else { return }
+            if !indexPathsForVisibleRows.contains(indexPath) { return }
+            guard let newCell = self.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
+            
+            newCell.leftImageView.stopActivityIndicator()
+            newCell.leftImageView.image = self.bookImageArray[indexPath.row].image
+        })
     }
     
     private func setCellDescription(indexPath: IndexPath, model: OLBookListModel, cell: BookListCell) {
+        cell.descriptionLabel.stopActivityIndicator()
+        
+        guard let descriptionID = model.edition_key?.first else {
+            self.bookDescriptionArray[indexPath.row].text = "No description available"
+            cell.descriptionLabel.text = "No description available"
+            return
+        }
+        
         if let text = bookDescriptionArray[indexPath.row].text {
             cell.descriptionLabel.text = text
             return
         }
         
-        if bookDescriptionArray[indexPath.row].isDownloading { return }
+        if bookDescriptionArray[indexPath.row].isDownloading {
+            cell.descriptionLabel.startActivityIndicator()
+            return
+        }
         
-        cell.descriptionLabel.text = ""
-        cell.descriptionLabel.startActivityIndicator()
         bookDescriptionArray[indexPath.row].isDownloading = true
+        cell.descriptionLabel.startActivityIndicator()
+        cell.descriptionLabel.text = ""
         
-        self.getDescriptionFromURL(descriptionID: model.edition_key?.first, completionHandler: { description in
-            self.bookDescriptionArray[indexPath.row].text = description
-            cell.descriptionLabel.text = self.bookDescriptionArray[indexPath.row].text
-            cell.descriptionLabel.stopActivityIndicator()
+        self.getDescriptionFromURL(descriptionID: descriptionID, completionHandler: { text in
+            
             self.bookDescriptionArray[indexPath.row].isDownloading = false
+            self.bookDescriptionArray[indexPath.row].text = text
+            
+            guard let indexPathsForVisibleRows = self.bookTableView.indexPathsForVisibleRows else { return }
+            if !indexPathsForVisibleRows.contains(indexPath) { return }
+            guard let newCell = self.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
+               
+            newCell.descriptionLabel.stopActivityIndicator()
+            newCell.descriptionLabel.text = self.bookDescriptionArray[indexPath.row].text
         })
     }
 
-    private func getDescriptionFromURL(descriptionID: String?, completionHandler: @escaping ((String) -> Void) ) {
-        
-        guard let descriptionID = descriptionID else {
-            completionHandler("No description available")
-            return
-        }
+    private func getDescriptionFromURL(descriptionID: String, completionHandler: @escaping ((String) -> Void) ) {
         
         let descriptionURL = "https://openlibrary.org/api/books?bibkeys=\(descriptionID)&jscmd=details&format=json"
         NetworkManager.shared.sendGETRequestResponseJSON(stringURL: descriptionURL, successHandler: { json in
@@ -168,6 +196,19 @@ extension BookListViewController {
                 
         }, failureHandler: { error in
             completionHandler("No description available")
+        })
+    }
+    
+    private func getImageFromURL(urlString: String, completionHandler: @escaping ((UIImage?) -> Void) ) {
+        
+        NetworkManager.shared.sendGETRequestResponseData(stringURL: urlString, successHandler: { data in
+            
+            let image = UIImage(data: data)
+            completionHandler(image)
+                
+        }, failureHandler: { error in
+            
+            completionHandler(nil)
         })
     }
     

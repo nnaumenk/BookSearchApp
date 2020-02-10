@@ -18,10 +18,17 @@ extension UIView {
         activityIndicator.accessibilityIdentifier = "activityIndicator"
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         self.addSubview(activityIndicator)
-        NSLayoutConstraint.activate([
-            activityIndicator.centerYAnchor.constraint(equalTo: self.centerYAnchor),
-            activityIndicator.centerXAnchor.constraint(equalTo: self.centerXAnchor),
-        ])
+        
+//        NSLayoutConstraint.activate([
+//            activityIndicator.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+//            activityIndicator.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+//        ])
+        
+        activityIndicator.snp.makeConstraints({ make in
+            make.centerX.equalTo(self.snp.centerX)
+            make.centerY.equalTo(self.snp.centerY)
+        })
+        
         activityIndicator.startAnimating()
     }
     

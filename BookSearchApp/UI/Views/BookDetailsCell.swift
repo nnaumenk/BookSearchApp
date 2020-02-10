@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import SnapKit
 
 final class BookDetailsCell: UITableViewCell {
 
@@ -44,11 +45,20 @@ final class BookDetailsCell: UITableViewCell {
     
     private func setupConstraints() {
         
-        NSLayoutConstraint.activate([
-            leftLabel.widthAnchor.constraint(equalTo: rightLabel.widthAnchor),
-            leftLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            rightLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-        ])
+//        NSLayoutConstraint.activate([
+//            leftLabel.widthAnchor.constraint(equalTo: rightLabel.widthAnchor),
+//            leftLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+//            rightLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+//        ])
+        
+        leftLabel.snp.makeConstraints({ make in
+            make.width.equalTo(rightLabel.snp.width)
+            make.centerY.equalTo(contentView.snp.centerY)
+        })
+        
+        rightLabel.snp.makeConstraints({ make in
+            make.centerY.equalTo(contentView.snp.centerY)
+        })
         
         let views: [String: UIView] = [
             "leftLabel": leftLabel,

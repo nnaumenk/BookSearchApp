@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SnapKit
 
 final class BookSearchViewController: MyViewController {
 
@@ -43,17 +44,29 @@ final class BookSearchViewController: MyViewController {
     
     private func setupConstraints() {
         
-        NSLayoutConstraint.activate([
-            searchTextField.widthAnchor.constraint(equalToConstant: 200),
-            searchTextField.centerXAnchor.constraint(equalTo: safeAreaView.centerXAnchor),
-            searchTextField.centerYAnchor.constraint(equalTo: safeAreaView.centerYAnchor, constant: -100)
-        ])
+//        NSLayoutConstraint.activate([
+//            searchTextField.widthAnchor.constraint(equalToConstant: 200),
+//            searchTextField.centerXAnchor.constraint(equalTo: safeAreaView.centerXAnchor),
+//            searchTextField.centerYAnchor.constraint(equalTo: safeAreaView.centerYAnchor, constant: -100)
+//        ])
+//        
+//        NSLayoutConstraint.activate([
+//            searchButton.widthAnchor.constraint(equalToConstant: 24),
+//            searchButton.heightAnchor.constraint(equalToConstant: 24),
+//            searchButton.centerYAnchor.constraint(equalTo: safeAreaView.centerYAnchor, constant: -100)
+//        ])
         
-        NSLayoutConstraint.activate([
-            searchButton.widthAnchor.constraint(equalToConstant: 24),
-            searchButton.heightAnchor.constraint(equalToConstant: 24),
-            searchButton.centerYAnchor.constraint(equalTo: safeAreaView.centerYAnchor, constant: -100)
-        ])
+        searchTextField.snp.makeConstraints({ make in
+            make.width.equalTo(200)
+            make.centerX.equalTo(safeAreaView.snp.centerX)
+            make.centerY.equalTo(safeAreaView.snp.centerY).offset(-100)
+        })
+        
+        searchButton.snp.makeConstraints({ make in
+            make.width.equalTo(24)
+            make.height.equalTo(24)
+            make.centerY.equalTo(safeAreaView.snp.centerY).offset(-100)
+        })
         
         let views: [String: UIView] = [
             "searchTextField": searchTextField,
