@@ -16,58 +16,37 @@ final class BookListViewController: MyViewController {
         tableView.dataSource = self
         tableView.register(BookListCell.self, forCellReuseIdentifier: "bookListCell")
         tableView.tableFooterView = UIView()
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        safeAreaView.addSubview(tableView)
         return tableView
     }()
     
+    var model: BookListModel!
     
-    var bookListModelArray: [OLBookListModel]! {
-        didSet {
-            self.bookImageArray = Array(repeating: (false, nil), count: bookListModelArray.count)
-            self.bookDescriptionArray = Array(repeating: (false, nil), count: bookListModelArray.count)
-        }
+    override func loadView() {
+        self.view = bookTableView
     }
-    var searchQuery: String!
-    var maxItemsNumber: Int!
-    var bookImageArray: [(isDownloading: Bool, image: UIImage?)]!
-    var bookDescriptionArray: [(isDownloading: Bool, text: String?)]!
-    
-    private var page = 2
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         view.backgroundColor = .white
-        navigationItem.title = searchQuery
-        
-        setupConstraints()
-    }
-    
-    private func setupConstraints() {
-        let views: [String: UIView] = [
-            "bookTableView": bookTableView,
-        ]
-        
-        NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[bookTableView]-0-|", options: [], metrics: nil, views: views))
-        NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[bookTableView]-0-|", options: [], metrics: nil, views: views))
+        navigationItem.title = model.searchQuery
     }
 }
 
 extension BookListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return bookListModelArray.count
+        return model.bookListModelArray.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let model = bookListModelArray[safe: indexPath.row] else { return UITableViewCell() }
+        guard let bookModel = model.bookListModelArray[safe: indexPath.row] else { return UITableViewCell() }
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "bookListCell") as? BookListCell else { return UITableViewCell() }
         
-        cell.titleLabel.text = model.title ?? ""
-        cell.subtileLabel.text = model.author_name != nil ? "by " + model.author_name!.joined(separator: " • ") : ""
+        cell.titleLabel.text = bookModel.title ?? ""
+        cell.subtileLabel.text = bookModel.author_name != nil ? "by " + bookModel.author_name!.joined(separator: " • ") : ""
         
-        setCellImage(indexPath: indexPath, model: model, cell: cell)
-        setCellDescription(indexPath: indexPath, model: model, cell: cell)
+        setCellImage(indexPath: indexPath, bookModel: bookModel, cell: cell)
+        setCellDescription(indexPath: indexPath, bookModel: bookModel, cell: cell)
         
         return cell
     }
@@ -76,15 +55,15 @@ extension BookListViewController: UITableViewDataSource {
 
 extension BookListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let largeImageURL = bookListModelArray[safe: indexPath.row]?.largeImageURL else {
+        guard let largeImageURL = model.bookListModelArray[safe: indexPath.row]?.largeImageURL else {
             showErrorAlert(message: "No additional information available")
             return
         }
-        guard let editionTitle = bookListModelArray[safe: indexPath.row]?.title else {
+        guard let editionTitle = model.bookListModelArray[safe: indexPath.row]?.title else {
             showErrorAlert(message: "No additional information available")
             return
         }
-        guard let editionKey = bookListModelArray[safe: indexPath.row]?.edition_key?.first else {
+        guard let editionKey = model.bookListModelArray[safe: indexPath.row]?.edition_key?.first else {
             showErrorAlert(message: "No additional information available")
             return
         }
@@ -93,100 +72,124 @@ extension BookListViewController: UITableViewDelegate {
     }
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        
+        struct offset {
+            static var oldMaximum: CGFloat = 0
+            static var currentMaximum: CGFloat = 0
+            
+            static func update(maximumOffset: CGFloat) {
+                
+                if currentMaximum == maximumOffset { return }
+                    
+                oldMaximum = currentMaximum
+                currentMaximum = maximumOffset
+            }
+        }
+        
         let currentOffset = scrollView.contentOffset.y
         let maximumOffset = scrollView.contentSize.height - scrollView.frame.height
         
-        if currentOffset / maximumOffset < 0.6 {
+        offset.update(maximumOffset: maximumOffset)
+        
+        if (currentOffset - offset.oldMaximum) / (maximumOffset - offset.oldMaximum) < 0.6 {
             return
         }
         
-        if bookListModelArray.count == maxItemsNumber { return }
         if activityIndicatorView.isAnimating { return }
         
-        loadMore()
+        model.loadMore(failureHandler: nil, successHandler: { [weak self] in
+            guard let self = self else { return }
+            
+            self.bookTableView.reloadData()
+        })
     }
 }
 
 extension BookListViewController {
-    private func setCellImage(indexPath: IndexPath, model: OLBookListModel, cell: BookListCell) {
+    private func setCellImage(indexPath: IndexPath, bookModel: OLBookListModel, cell: BookListCell) {
         
         cell.leftImageView.stopActivityIndicator()
         
-        guard let imageURL = model.mediumImageURL else {
-            bookImageArray[indexPath.row].image = UIImage(named: "no_book_cover")
-            cell.leftImageView.image = bookImageArray[indexPath.row].image
+        guard let imageURL = bookModel.mediumImageURL else {
+            model.bookImageArray[indexPath.row].image = UIImage(named: "no_book_cover")
+            cell.leftImageView.image = model.bookImageArray[safe: indexPath.row]?.image
             return
         }
         
-        if let image = bookImageArray[indexPath.row].image {
+        if let image = model.bookImageArray[indexPath.row].image {
             cell.leftImageView.image = image
             return
         }
         
-        if bookImageArray[indexPath.row].isDownloading {
+        if model.bookImageArray[indexPath.row].isDownloading {
             cell.leftImageView.startActivityIndicator()
             return
         }
         
-        bookImageArray[indexPath.row].isDownloading = true
+        model.bookImageArray[indexPath.row].isDownloading = true
         cell.leftImageView.startActivityIndicator()
         cell.leftImageView.image = nil
         
-        self.getImageFromURL(urlString: imageURL, completionHandler: { image in
-                
-            self.bookImageArray[indexPath.row].isDownloading = false
-            self.bookImageArray[indexPath.row].image = image ?? UIImage(named: "no_book_cover")
+        self.getImageFromURL(urlString: imageURL, completionHandler: { [weak self] image in
+            guard let self = self else { return }
+            
+            self.model.bookImageArray[safe: indexPath.row]?.isDownloading = false
+            self.model.bookImageArray[safe: indexPath.row]?.image = image ?? UIImage(named: "no_book_cover")
                 
             guard let indexPathsForVisibleRows = self.bookTableView.indexPathsForVisibleRows else { return }
             if !indexPathsForVisibleRows.contains(indexPath) { return }
             guard let newCell = self.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
             
             newCell.leftImageView.stopActivityIndicator()
-            newCell.leftImageView.image = self.bookImageArray[indexPath.row].image
+            newCell.leftImageView.image = self.model.bookImageArray[indexPath.row].image
         })
     }
     
-    private func setCellDescription(indexPath: IndexPath, model: OLBookListModel, cell: BookListCell) {
+    private func setCellDescription(indexPath: IndexPath, bookModel: OLBookListModel, cell: BookListCell) {
+        
         cell.descriptionLabel.stopActivityIndicator()
         
-        guard let descriptionID = model.edition_key?.first else {
-            self.bookDescriptionArray[indexPath.row].text = "No description available"
+        guard let descriptionID = bookModel.edition_key?.first else {
+            self.model.bookDescriptionArray[safe: indexPath.row]?.text = "No description available"
             cell.descriptionLabel.text = "No description available"
             return
         }
         
-        if let text = bookDescriptionArray[indexPath.row].text {
+        if let text = model.bookDescriptionArray[safe: indexPath.row]?.text {
             cell.descriptionLabel.text = text
             return
         }
         
-        if bookDescriptionArray[indexPath.row].isDownloading {
+        if model.bookDescriptionArray[safe: indexPath.row]?.isDownloading ?? false {
             cell.descriptionLabel.startActivityIndicator()
             return
         }
         
-        bookDescriptionArray[indexPath.row].isDownloading = true
+        model.bookDescriptionArray[safe: indexPath.row]?.isDownloading = true
         cell.descriptionLabel.startActivityIndicator()
         cell.descriptionLabel.text = ""
         
-        self.getDescriptionFromURL(descriptionID: descriptionID, completionHandler: { text in
+        self.getDescriptionFromURL(descriptionID: descriptionID, completionHandler: { [weak self] text in
+            guard let self = self else { return }
             
-            self.bookDescriptionArray[indexPath.row].isDownloading = false
-            self.bookDescriptionArray[indexPath.row].text = text
+            self.model.bookDescriptionArray[safe: indexPath.row]?.isDownloading = false
+            self.model.bookDescriptionArray[safe: indexPath.row]?.text = text
             
             guard let indexPathsForVisibleRows = self.bookTableView.indexPathsForVisibleRows else { return }
             if !indexPathsForVisibleRows.contains(indexPath) { return }
             guard let newCell = self.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
                
             newCell.descriptionLabel.stopActivityIndicator()
-            newCell.descriptionLabel.text = self.bookDescriptionArray[indexPath.row].text
+            newCell.descriptionLabel.text = self.model.bookDescriptionArray[indexPath.row].text
         })
     }
 
     private func getDescriptionFromURL(descriptionID: String, completionHandler: @escaping ((String) -> Void) ) {
         
-        let descriptionURL = "https://openlibrary.org/api/books?bibkeys=\(descriptionID)&jscmd=details&format=json"
+        let descriptionURL = Constants.main.API_URL + "/api/books?bibkeys=\(descriptionID)&jscmd=details&format=json"
+        
         NetworkManager.shared.sendGETRequestResponseJSON(stringURL: descriptionURL, successHandler: { json in
+            
             guard let description = self.parseDescriptionOLDetailsBook(json: json, descriptionID: descriptionID) else {
                 completionHandler("No description available")
                 return
@@ -219,33 +222,5 @@ extension BookListViewController {
         guard let description = dict3["description"] as? String else { return nil }
         
         return description
-    }
-    
-    private func loadMore() {
-        let stringURL = "http://openlibrary.org/search.json?page=\(self.page)&q=\(searchQuery.replacingOccurrences(of: " ", with: "+"))"
-        
-        activityIndicatorView.startAnimating()
-        NetworkManager.shared.sendGETRequestResponseModel(stringURL: stringURL, successHandler: { (model: OLSearchPaginationModel) in
-                
-            self.activityIndicatorView.stopAnimating()
-                
-            if model.docs.isEmpty {
-                self.showErrorAlert(message: "No results")
-                return
-            }
-                
-            self.page += 1
-            
-            self.bookListModelArray += model.docs
-            self.bookImageArray += Array(repeating: (false, nil), count: model.docs.count)
-            self.bookDescriptionArray += Array(repeating: (false, nil), count: model.docs.count)
-                
-            self.bookTableView.reloadData()
-                
-        }, failureHandler: { error in
-                
-            self.activityIndicatorView.stopAnimating()
-            self.showErrorAlert(message: error)
-        })
     }
 }

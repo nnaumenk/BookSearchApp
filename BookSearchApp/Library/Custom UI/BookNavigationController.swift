@@ -11,11 +11,9 @@ import UIKit
 
 final class BookNavigationController: UINavigationController {
     
-    func openBookListVC(bookListModelArray: [OLBookListModel], searchQuery: String, maxItemsNumber: Int) {
+    func openBookListVC(model: BookListModel) {
         let vc = BookListViewController()
-        vc.bookListModelArray = bookListModelArray
-        vc.searchQuery = searchQuery
-        vc.maxItemsNumber = maxItemsNumber
+        vc.model = model
         
         self.pushViewController(vc, animated: true)
     }

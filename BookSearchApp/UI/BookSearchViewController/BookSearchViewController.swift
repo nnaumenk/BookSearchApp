@@ -84,7 +84,7 @@ extension BookSearchViewController {
         if searchTextField.text!.isEmpty { return }
         
         let searchFieldText = searchTextField.text!
-        let stringURL = "http://openlibrary.org/search.json?page=\(1)&q=\(searchFieldText.replacingOccurrences(of: " ", with: "+"))"
+        let stringURL = Constants.main.API_URL + "/search.json?page=\(1)&q=\(searchFieldText.replacingOccurrences(of: " ", with: "+"))"
         
         activityIndicatorView.startAnimating()
         NetworkManager.shared.sendGETRequestResponseModel(stringURL: stringURL, successHandler: { (model: OLSearchPaginationModel) in
@@ -96,7 +96,12 @@ extension BookSearchViewController {
                 return
             }
             
-            self.bookNavigationController?.openBookListVC(bookListModelArray: model.docs, searchQuery: searchFieldText, maxItemsNumber: model.numFound)
+            let bookListModel = BookListModel()
+            bookListModel.bookListModelArray = model.docs
+            bookListModel.maxItemsNumber = model.numFound
+            bookListModel.searchQuery = searchFieldText
+            
+            self.bookNavigationController?.openBookListVC(model: bookListModel)
             
         }, failureHandler: { error in
             
