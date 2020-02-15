@@ -9,37 +9,33 @@
 import UIKit
 
 final class BookListViewController: MyViewController {
-
-    private lazy var bookTableView: UITableView = {
-        let tableView = UITableView()
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.register(BookListCell.self, forCellReuseIdentifier: "bookListCell")
-        tableView.tableFooterView = UIView()
-        return tableView
-    }()
     
-    var model: BookListModel!
+    var myModel: BookListModel!
+    var myView = BookListView()
     
     override func loadView() {
-        self.view = bookTableView
+        self.view = myView
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         view.backgroundColor = .white
-        navigationItem.title = model.searchQuery
+        navigationItem.title = myModel.searchQuery
+        
+        myView.bookTableView.delegate = self
+        myView.bookTableView.dataSource = self
+        myView.bookTableView.register(BookListCell.self, forCellReuseIdentifier: "bookListCell")
     }
 }
 
 extension BookListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return model.bookListModelArray.count
+        return myModel.bookListModelArray.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let bookModel = model.bookListModelArray[safe: indexPath.row] else { return UITableViewCell() }
+        guard let bookModel = myModel.bookListModelArray[safe: indexPath.row] else { return UITableViewCell() }
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "bookListCell") as? BookListCell else { return UITableViewCell() }
         
         cell.titleLabel.text = bookModel.title ?? ""
@@ -55,15 +51,15 @@ extension BookListViewController: UITableViewDataSource {
 
 extension BookListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let largeImageURL = model.bookListModelArray[safe: indexPath.row]?.largeImageURL else {
+        guard let largeImageURL = myModel.bookListModelArray[safe: indexPath.row]?.largeImageURL else {
             showErrorAlert(message: "No additional information available")
             return
         }
-        guard let editionTitle = model.bookListModelArray[safe: indexPath.row]?.title else {
+        guard let editionTitle = myModel.bookListModelArray[safe: indexPath.row]?.title else {
             showErrorAlert(message: "No additional information available")
             return
         }
-        guard let editionKey = model.bookListModelArray[safe: indexPath.row]?.edition_key?.first else {
+        guard let editionKey = myModel.bookListModelArray[safe: indexPath.row]?.edition_key?.first else {
             showErrorAlert(message: "No additional information available")
             return
         }
@@ -97,10 +93,10 @@ extension BookListViewController: UITableViewDelegate {
         
         if activityIndicatorView.isAnimating { return }
         
-        model.loadMore(failureHandler: nil, successHandler: { [weak self] in
+        myModel.loadMore(failureHandler: nil, successHandler: { [weak self] in
             guard let self = self else { return }
             
-            self.bookTableView.reloadData()
+            self.myView.bookTableView.reloadData()
         })
     }
 }
@@ -111,37 +107,37 @@ extension BookListViewController {
         cell.leftImageView.stopActivityIndicator()
         
         guard let imageURL = bookModel.mediumImageURL else {
-            model.bookImageArray[indexPath.row].image = UIImage(named: "no_book_cover")
-            cell.leftImageView.image = model.bookImageArray[safe: indexPath.row]?.image
+            myModel.bookImageArray[indexPath.row].image = UIImage(named: "no_book_cover")
+            cell.leftImageView.image = myModel.bookImageArray[safe: indexPath.row]?.image
             return
         }
         
-        if let image = model.bookImageArray[indexPath.row].image {
+        if let image = myModel.bookImageArray[indexPath.row].image {
             cell.leftImageView.image = image
             return
         }
         
-        if model.bookImageArray[indexPath.row].isDownloading {
+        if myModel.bookImageArray[indexPath.row].isDownloading {
             cell.leftImageView.startActivityIndicator()
             return
         }
         
-        model.bookImageArray[indexPath.row].isDownloading = true
+        myModel.bookImageArray[indexPath.row].isDownloading = true
         cell.leftImageView.startActivityIndicator()
         cell.leftImageView.image = nil
         
         self.getImageFromURL(urlString: imageURL, completionHandler: { [weak self] image in
             guard let self = self else { return }
             
-            self.model.bookImageArray[safe: indexPath.row]?.isDownloading = false
-            self.model.bookImageArray[safe: indexPath.row]?.image = image ?? UIImage(named: "no_book_cover")
+            self.myModel.bookImageArray[safe: indexPath.row]?.isDownloading = false
+            self.myModel.bookImageArray[safe: indexPath.row]?.image = image ?? UIImage(named: "no_book_cover")
                 
-            guard let indexPathsForVisibleRows = self.bookTableView.indexPathsForVisibleRows else { return }
+            guard let indexPathsForVisibleRows = self.myView.bookTableView.indexPathsForVisibleRows else { return }
             if !indexPathsForVisibleRows.contains(indexPath) { return }
-            guard let newCell = self.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
+            guard let newCell = self.myView.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
             
             newCell.leftImageView.stopActivityIndicator()
-            newCell.leftImageView.image = self.model.bookImageArray[indexPath.row].image
+            newCell.leftImageView.image = self.myModel.bookImageArray[indexPath.row].image
         })
     }
     
@@ -150,37 +146,37 @@ extension BookListViewController {
         cell.descriptionLabel.stopActivityIndicator()
         
         guard let descriptionID = bookModel.edition_key?.first else {
-            self.model.bookDescriptionArray[safe: indexPath.row]?.text = "No description available"
+            self.myModel.bookDescriptionArray[safe: indexPath.row]?.text = "No description available"
             cell.descriptionLabel.text = "No description available"
             return
         }
         
-        if let text = model.bookDescriptionArray[safe: indexPath.row]?.text {
+        if let text = myModel.bookDescriptionArray[safe: indexPath.row]?.text {
             cell.descriptionLabel.text = text
             return
         }
         
-        if model.bookDescriptionArray[safe: indexPath.row]?.isDownloading ?? false {
+        if myModel.bookDescriptionArray[safe: indexPath.row]?.isDownloading ?? false {
             cell.descriptionLabel.startActivityIndicator()
             return
         }
         
-        model.bookDescriptionArray[safe: indexPath.row]?.isDownloading = true
+        myModel.bookDescriptionArray[safe: indexPath.row]?.isDownloading = true
         cell.descriptionLabel.startActivityIndicator()
         cell.descriptionLabel.text = ""
         
         self.getDescriptionFromURL(descriptionID: descriptionID, completionHandler: { [weak self] text in
             guard let self = self else { return }
             
-            self.model.bookDescriptionArray[safe: indexPath.row]?.isDownloading = false
-            self.model.bookDescriptionArray[safe: indexPath.row]?.text = text
+            self.myModel.bookDescriptionArray[safe: indexPath.row]?.isDownloading = false
+            self.myModel.bookDescriptionArray[safe: indexPath.row]?.text = text
             
-            guard let indexPathsForVisibleRows = self.bookTableView.indexPathsForVisibleRows else { return }
+            guard let indexPathsForVisibleRows = self.myView.bookTableView.indexPathsForVisibleRows else { return }
             if !indexPathsForVisibleRows.contains(indexPath) { return }
-            guard let newCell = self.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
+            guard let newCell = self.myView.bookTableView.cellForRow(at: indexPath) as? BookListCell else { return }
                
             newCell.descriptionLabel.stopActivityIndicator()
-            newCell.descriptionLabel.text = self.model.bookDescriptionArray[indexPath.row].text
+            newCell.descriptionLabel.text = self.myModel.bookDescriptionArray[indexPath.row].text
         })
     }
 
