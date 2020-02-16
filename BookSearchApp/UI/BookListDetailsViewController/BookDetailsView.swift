@@ -1,20 +1,26 @@
 //
-//  BookListView.swift
+//  BookDetailsView.swift
 //  BookSearchApp
 //
-//  Created by Nazar NAUMENKO on 2/15/20.
+//  Created by Nazar NAUMENKO on 2/16/20.
 //  Copyright © 2020 Nazar NAUMENKO. All rights reserved.
 //
 
 import UIKit
 
-final class BookListView: UIView {
+final class BookDetailsView: UIView {
 
     var bookTableView: UITableView = {
         let tableView = UITableView()
         tableView.tableFooterView = UIView()
         tableView.translatesAutoresizingMaskIntoConstraints = false
         return tableView
+    }()
+    
+    var avatarCell: AvatarImageCell = {
+        let cell = AvatarImageCell()
+        
+        return cell
     }()
     
     override init(frame: CGRect) {
@@ -27,7 +33,7 @@ final class BookListView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     private func bookTableViewConfigure(){
         
         self.addSubview(bookTableView)

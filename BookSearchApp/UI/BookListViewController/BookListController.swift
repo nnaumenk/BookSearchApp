@@ -20,7 +20,6 @@ final class BookListViewController: MyViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .white
         navigationItem.title = myModel.searchQuery
         
         myView.bookTableView.delegate = self
@@ -64,39 +63,26 @@ extension BookListViewController: UITableViewDelegate {
             return
         }
         
-        bookNavigationController?.openBookDetailsVC(imageURL: largeImageURL, editionTitle: editionTitle, editionKey: editionKey)
+        bookNavigationController?.openBookDetailsVC(model: BookDetailsModel(editionTitle: editionTitle, imageURL: largeImageURL, editionKey: editionKey))
     }
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         
-        struct offset {
-            static var oldMaximum: CGFloat = 0
-            static var currentMaximum: CGFloat = 0
-            
-            static func update(maximumOffset: CGFloat) {
-                
-                if currentMaximum == maximumOffset { return }
-                    
-                oldMaximum = currentMaximum
-                currentMaximum = maximumOffset
-            }
-        }
-        
-        let currentOffset = scrollView.contentOffset.y
-        let maximumOffset = scrollView.contentSize.height - scrollView.frame.height
-        
-        offset.update(maximumOffset: maximumOffset)
-        
-        if (currentOffset - offset.oldMaximum) / (maximumOffset - offset.oldMaximum) < 0.6 {
-            return
-        }
-        
+        if !scrollView.isNextPagination(percent: 0.6) { return }
         if activityIndicatorView.isAnimating { return }
         
-        myModel.loadMore(failureHandler: nil, successHandler: { [weak self] in
+        activityIndicatorView.startAnimating()
+        
+        myModel.loadMoreBooks(successHandler: { [weak self] in
             guard let self = self else { return }
             
+            self.activityIndicatorView.stopAnimating()
             self.myView.bookTableView.reloadData()
+            
+        }, failureHandler: { [weak self] in
+            guard let self = self else { return }
+            
+            self.activityIndicatorView.stopAnimating()
         })
     }
 }
@@ -122,15 +108,11 @@ extension BookListViewController {
             return
         }
         
-        myModel.bookImageArray[indexPath.row].isDownloading = true
         cell.leftImageView.startActivityIndicator()
         cell.leftImageView.image = nil
         
-        self.getImageFromURL(urlString: imageURL, completionHandler: { [weak self] image in
+        myModel.getImageForCellFromURL(cellIndex: indexPath.row, urlString: imageURL, completionHandler: { [weak self] in
             guard let self = self else { return }
-            
-            self.myModel.bookImageArray[safe: indexPath.row]?.isDownloading = false
-            self.myModel.bookImageArray[safe: indexPath.row]?.image = image ?? UIImage(named: "no_book_cover")
                 
             guard let indexPathsForVisibleRows = self.myView.bookTableView.indexPathsForVisibleRows else { return }
             if !indexPathsForVisibleRows.contains(indexPath) { return }
@@ -165,11 +147,8 @@ extension BookListViewController {
         cell.descriptionLabel.startActivityIndicator()
         cell.descriptionLabel.text = ""
         
-        self.getDescriptionFromURL(descriptionID: descriptionID, completionHandler: { [weak self] text in
+        myModel.getDescriptionForCellFromURL(cellIndex: indexPath.row, descriptionID: descriptionID, completionHandler: { [weak self] in
             guard let self = self else { return }
-            
-            self.myModel.bookDescriptionArray[safe: indexPath.row]?.isDownloading = false
-            self.myModel.bookDescriptionArray[safe: indexPath.row]?.text = text
             
             guard let indexPathsForVisibleRows = self.myView.bookTableView.indexPathsForVisibleRows else { return }
             if !indexPathsForVisibleRows.contains(indexPath) { return }
@@ -178,45 +157,5 @@ extension BookListViewController {
             newCell.descriptionLabel.stopActivityIndicator()
             newCell.descriptionLabel.text = self.myModel.bookDescriptionArray[indexPath.row].text
         })
-    }
-
-    private func getDescriptionFromURL(descriptionID: String, completionHandler: @escaping ((String) -> Void) ) {
-        
-        let descriptionURL = Constants.main.API_URL + "/api/books?bibkeys=\(descriptionID)&jscmd=details&format=json"
-        
-        NetworkManager.shared.sendGETRequestResponseJSON(stringURL: descriptionURL, successHandler: { json in
-            
-            guard let description = self.parseDescriptionOLDetailsBook(json: json, descriptionID: descriptionID) else {
-                completionHandler("No description available")
-                return
-            }
-            
-            completionHandler(description)
-                
-        }, failureHandler: { error in
-            completionHandler("No description available")
-        })
-    }
-    
-    private func getImageFromURL(urlString: String, completionHandler: @escaping ((UIImage?) -> Void) ) {
-        
-        NetworkManager.shared.sendGETRequestResponseData(stringURL: urlString, successHandler: { data in
-            
-            let image = UIImage(data: data)
-            completionHandler(image)
-                
-        }, failureHandler: { error in
-            
-            completionHandler(nil)
-        })
-    }
-    
-    private func parseDescriptionOLDetailsBook(json: Any, descriptionID: String) -> String? {
-        guard let dict1 = json as? [String: Any] else { return nil }
-        guard let dict2 = dict1["\(descriptionID)"] as? [String: Any] else { return nil }
-        guard let dict3 = dict2["details"] as? [String: Any] else { return nil }
-        guard let description = dict3["description"] as? String else { return nil }
-        
-        return description
     }
 }

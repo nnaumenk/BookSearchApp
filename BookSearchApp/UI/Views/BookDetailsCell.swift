@@ -45,20 +45,11 @@ final class BookDetailsCell: UITableViewCell {
     
     private func setupConstraints() {
         
-//        NSLayoutConstraint.activate([
-//            leftLabel.widthAnchor.constraint(equalTo: rightLabel.widthAnchor),
-//            leftLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-//            rightLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-//        ])
-        
-        leftLabel.snp.makeConstraints({ make in
-            make.width.equalTo(rightLabel.snp.width)
-            make.centerY.equalTo(contentView.snp.centerY)
-        })
-        
-        rightLabel.snp.makeConstraints({ make in
-            make.centerY.equalTo(contentView.snp.centerY)
-        })
+        NSLayoutConstraint.activate([
+            leftLabel.widthAnchor.constraint(equalTo: rightLabel.widthAnchor),
+            leftLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            rightLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+        ])
         
         let views: [String: UIView] = [
             "leftLabel": leftLabel,

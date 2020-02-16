@@ -13,16 +13,14 @@ final class BookNavigationController: UINavigationController {
     
     func openBookListVC(model: BookListModel) {
         let vc = BookListViewController()
-        vc.model = model
+        vc.myModel = model
         
         self.pushViewController(vc, animated: true)
     }
     
-    func openBookDetailsVC(imageURL: String, editionTitle: String, editionKey: String) {
+    func openBookDetailsVC(model: BookDetailsModel) {
         let vc = BookDetailsViewController()
-        vc.imageURL = imageURL
-        vc.editionTitle = editionTitle
-        vc.editionKey = editionKey
+        vc.myModel = model
         
         self.pushViewController(vc, animated: true)
     }

@@ -11,69 +11,20 @@ import SnapKit
 
 final class BookSearchViewController: MyViewController {
 
-    private lazy var searchTextField: UITextField = {
-        let textFiled = UITextField()
-        textFiled.placeholder = "Book's title"
-        textFiled.borderStyle = .roundedRect
-        textFiled.returnKeyType = .done
-        textFiled.delegate = self
-        textFiled.translatesAutoresizingMaskIntoConstraints = false
-        safeAreaView.addSubview(textFiled)
-        return textFiled
-    }()
+    var myModel = BookSearchModel()
+    var myView = BookSearchView()
     
-    private lazy var searchButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(named: "search_icon"), for: .normal)
-        button.tintColor = .black
-        button.addTarget(self, action: #selector(searchButtonClicked), for: .touchUpInside)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        safeAreaView.addSubview(button)
-        return button
-    }()
-    
+    override func loadView() {
+        self.view = myView
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        
         navigationItem.title = "Open Library"
-        view.backgroundColor = .white
-        setupConstraints()
-    }
-    
-    private func setupConstraints() {
         
-//        NSLayoutConstraint.activate([
-//            searchTextField.widthAnchor.constraint(equalToConstant: 200),
-//            searchTextField.centerXAnchor.constraint(equalTo: safeAreaView.centerXAnchor),
-//            searchTextField.centerYAnchor.constraint(equalTo: safeAreaView.centerYAnchor, constant: -100)
-//        ])
-//        
-//        NSLayoutConstraint.activate([
-//            searchButton.widthAnchor.constraint(equalToConstant: 24),
-//            searchButton.heightAnchor.constraint(equalToConstant: 24),
-//            searchButton.centerYAnchor.constraint(equalTo: safeAreaView.centerYAnchor, constant: -100)
-//        ])
-        
-        searchTextField.snp.makeConstraints({ make in
-            make.width.equalTo(200)
-            make.centerX.equalTo(safeAreaView.snp.centerX)
-            make.centerY.equalTo(safeAreaView.snp.centerY).offset(-100)
-        })
-        
-        searchButton.snp.makeConstraints({ make in
-            make.width.equalTo(24)
-            make.height.equalTo(24)
-            make.centerY.equalTo(safeAreaView.snp.centerY).offset(-100)
-        })
-        
-        let views: [String: UIView] = [
-            "searchTextField": searchTextField,
-            "searchButton": searchButton,
-        ]
-        
-        NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "H:[searchTextField]-4-[searchButton]", options: [], metrics: nil, views: views))
+        myView.searchTextField.delegate = self
+        myView.searchButton.addTarget(self, action: #selector(searchButtonClicked), for: .touchUpInside)
     }
 }
 
@@ -81,29 +32,19 @@ extension BookSearchViewController {
     
     @objc private func searchButtonClicked() {
         if activityIndicatorView.isAnimating { return }
-        if searchTextField.text!.isEmpty { return }
-        
-        let searchFieldText = searchTextField.text!
-        let stringURL = Constants.main.API_URL + "/search.json?page=\(1)&q=\(searchFieldText.replacingOccurrences(of: " ", with: "+"))"
+        if myView.searchTextField.text!.isEmpty { return }
         
         activityIndicatorView.startAnimating()
-        NetworkManager.shared.sendGETRequestResponseModel(stringURL: stringURL, successHandler: { (model: OLSearchPaginationModel) in
+        myModel.loadBooks(searchQuery: myView.searchTextField.text!, successHandler: { [weak self] in
             
-            self.activityIndicatorView.stopAnimating()
+            guard let self = self else { return }
             
-            if model.docs.isEmpty {
-                self.showErrorAlert(message: "No results")
-                return
-            }
-            
-            let bookListModel = BookListModel()
-            bookListModel.bookListModelArray = model.docs
-            bookListModel.maxItemsNumber = model.numFound
-            bookListModel.searchQuery = searchFieldText
-            
+            let bookListModel = BookListModel(searchQuery: self.myModel.searchQuery, bookListModelArray: self.myModel.bookListModelArray, maxItemsNumber: self.myModel.maxItemsNumber)
             self.bookNavigationController?.openBookListVC(model: bookListModel)
             
-        }, failureHandler: { error in
+        }, failureHandler: { [weak self] error in
+            
+            guard let self = self else { return }
             
             self.activityIndicatorView.stopAnimating()
             self.showErrorAlert(message: error)
@@ -115,7 +56,7 @@ extension BookSearchViewController {
 extension BookSearchViewController: UITextFieldDelegate {
     
     internal func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        searchTextField.resignFirstResponder()
+        myView.searchTextField.resignFirstResponder()
         return true
     }
 }
