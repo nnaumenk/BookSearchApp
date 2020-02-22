@@ -13,6 +13,7 @@ final class AvatarImageCell: UITableViewCell {
     lazy var avatarImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(imageView)
         return imageView
     }()
@@ -28,13 +29,18 @@ final class AvatarImageCell: UITableViewCell {
     }
     
     private func setupConstraints() {
-      
+        
         let views: [String: UIView] = [
             "avatarImageView": avatarImageView,
         ]
         
         NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "H:|-16-[avatarImageView]-16-|", options: [], metrics: nil, views: views))
         
-        NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "V:|-8-[avatarImageView]-8-|", options: [], metrics: nil, views: views))
+        NSLayoutConstraint.activate(NSLayoutConstraint.constraints(withVisualFormat: "V:|-(>=8)-[avatarImageView]-(>=8)-|", options: [], metrics: nil, views: views))
+        
+        NSLayoutConstraint.activate([
+            avatarImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            avatarImageView.heightAnchor.constraint(equalTo: avatarImageView.widthAnchor, multiplier: 9 / 16),
+        ])
     }
 }

@@ -16,7 +16,9 @@ extension UIImageView {
         self.image = nil
         self.startActivityIndicator()
         
-        NetworkManager.shared.sendGETRequestResponseData(stringURL: urlString, successHandler: { data in
+        NetworkManager.shared.sendGETRequestResponseData(stringURL: urlString, successHandler: { [weak self] data in
+            guard let self = self else { return }
+            
             
             self.stopActivityIndicator()
      

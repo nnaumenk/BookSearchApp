@@ -24,7 +24,7 @@ final class BookDetailsViewController: MyViewController {
         navigationItem.title = myModel.editionTitle
         
         myView.bookTableView.dataSource = self
-        myView.bookTableView.register(BookListCell.self, forCellReuseIdentifier: "bookDetailsCell")
+        myView.bookTableView.register(BookDetailsCell.self, forCellReuseIdentifier: "bookDetailsCell")
         
         myView.avatarCell.avatarImageView.imageFromURL(urlString: myModel.imageURL, completionHandler: nil)
     }

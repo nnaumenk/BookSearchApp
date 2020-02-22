@@ -13,13 +13,15 @@ final class BookDetailsView: UIView {
     var bookTableView: UITableView = {
         let tableView = UITableView()
         tableView.tableFooterView = UIView()
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 500
         tableView.translatesAutoresizingMaskIntoConstraints = false
         return tableView
     }()
     
     var avatarCell: AvatarImageCell = {
         let cell = AvatarImageCell()
-        
+        cell.translatesAutoresizingMaskIntoConstraints = false
         return cell
     }()
     
